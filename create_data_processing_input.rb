@@ -5,7 +5,7 @@ require 'fileutils'
 require 'json'
 require 'pathname'
 
-WorkflowInput = Struct.new(:sample, :workflow, :json_path)
+WorkflowInput = Struct.new(:sample, :workflow_name, :input_path)
 
 # @param sample [String]
 # @param hic_rows [Array<CSV::Row>]
@@ -21,10 +21,10 @@ def create_hic_qc_input(sample, hic_rows, illumina_paths, out_dir)
       'hic_qc_wf.other_reads': illumina_paths,
       'hic_qc_wf.file_id': id
     }
-    json_path = out_dir / 'hic' / "#{id}.json"
-    FileUtils.mkpath(json_path.dirname)
-    File.write(json_path, JSON.pretty_generate(input))
-    WorkflowInput.new(sample: sample, workflow: 'data_processing/hic_qc_workflow', json_path: json_path)
+    input_path = out_dir / 'hic' / "#{id}.json"
+    FileUtils.mkpath(input_path.dirname)
+    File.write(input_path, JSON.pretty_generate(input))
+    WorkflowInput.new(sample: sample, workflow_name: 'data_processing/hic_qc_workflow', input_path: input_path)
   end
 end
 
@@ -43,10 +43,10 @@ def create_hifi_qc_input(sample, hifi_rows, illumina_paths, out_dir)
       'hifi_qc_wf.sample_id': id,
       'hifi_qc_wf.perform_methylation_check': false
     }
-    json_path = out_dir / 'hifi' / "#{id}.json"
-    FileUtils.mkpath(json_path.dirname)
-    File.write(json_path, JSON.pretty_generate(input))
-    WorkflowInput.new(sample: sample, workflow: 'data_processing/hifi_qc_workflow', json_path: json_path)
+    input_path = out_dir / 'hifi' / "#{id}.json"
+    FileUtils.mkpath(input_path.dirname)
+    File.write(input_path, JSON.pretty_generate(input))
+    WorkflowInput.new(sample: sample, workflow_name: 'data_processing/hifi_qc_workflow', input_path: input_path)
   end
 end
 
@@ -64,10 +64,10 @@ def create_ont_qc_input(sample, ont_rows, illumina_paths, out_dir)
       'ont_qc_wf.other_reads': illumina_paths,
       'ont_qc_wf.file_id': id,
     }
-    json_path = out_dir / 'ont' / "#{id}.json"
-    FileUtils.mkpath(json_path.dirname)
-    File.write(json_path, JSON.pretty_generate(input))
-    WorkflowInput.new(sample: sample, workflow: 'data_processing/ont_qc_workflow', json_path: json_path)
+    input_path = out_dir / 'ont' / "#{id}.json"
+    FileUtils.mkpath(input_path.dirname)
+    File.write(input_path, JSON.pretty_generate(input))
+    WorkflowInput.new(sample: sample, workflow_name: 'data_processing/ont_qc_workflow', input_path: input_path)
   end
 end
 
@@ -99,11 +99,11 @@ workflow_inputs = asm_reads_by_sample.filter_map do |sample, row|
   ]
 end.flatten
 
-puts %w[sample workflow json_path].join("\t")
+puts %w[sample workflow_name input_path].join("\t")
 workflow_inputs.each do |workflow_input|
   puts [
     workflow_input.sample,
-    workflow_input.workflow,
-    workflow_input.json_path
+    workflow_input.workflow_name,
+    workflow_input.input_path
   ].join("\t")
 end

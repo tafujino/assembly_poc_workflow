@@ -12,7 +12,6 @@ class CromwellServer
     @host = host
     @port = port
     @uri_prefix = "http://#{@host}:#{@port}/api/workflows/#{CROMWELL_API_VERSION}"
-    pp @uri_prefix
   end
 
   # @param wdl_url [String]

@@ -4,8 +4,6 @@ require 'csv'
 require 'json'
 require_relative 'cromwell_server'
 
-# SubmissionResult = Struct.new(:sample, :workflow, :json_path, :status)
-
 ORIGINAL_REPO_BASE_URL = 'https://raw.githubusercontent.com/human-pangenomics/hpp_production_workflows/0dc24c75ea3349bc7763ec71607f216d2822d440'
 
 # network.json is like the following:
@@ -24,13 +22,20 @@ OPTIONS_PATH = Pathname.new('workflow_options.json')
 
 cromwell = CromwellServer.new(network_conf['host'], network_conf['port'])
 
+puts %w[sample workflow_name input_path workflow_id workflow_status].join("\t")
 CSV.table(WORKFLOW_INPUTS_TABLE_PATH, col_sep: "\t").each do |row|
-  workflow_type = row[:workflow]
+  workflow_type = row[:workflow_name]
   workflow_url = workflow_url_table[workflow_type]
   unless workflow_url
-    warn "Undefined workflow type: #{workflow_type} (sample = #{row[:sample]}, json_path = #{row[:json_path]})"
+    warn "Undefined workflow type: #{workflow_type} (sample = #{row[:sample]}, input_path = #{row[:input_path]})"
     next
   end
-  ret = cromwell.submit_by_url(workflow_url, row[:json_path], OPTIONS_PATH)
-  pp ret
+  ret = cromwell.submit_by_url(workflow_url, row[:input_path], OPTIONS_PATH)
+  puts [
+    row[:sample],
+    row[:workflow_name],
+    row[:json_path],
+    ret['id'],
+    ret['status']
+  ].join("\t")
 end
