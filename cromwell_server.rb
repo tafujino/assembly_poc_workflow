@@ -7,18 +7,19 @@ CROMWELL_API_VERSION = 'v1'
 
 class CromwellServer
   # @param host [String]
-  # @param port [Integer]
+  # @param port [String, Integer]
   def initialize(host, port)
     @host = host
     @port = port
     @uri_prefix = "http://#{@host}:#{@port}/api/workflows/#{CROMWELL_API_VERSION}"
+    pp @uri_prefix
   end
 
   # @param wdl_url [String]
   # @param inputs_path [String] json
   # @param options_path [String] json
   # @return [Hash]
-  def submit_by_url(wdl_uri, inputs_path, options_path)
+  def submit_by_url(wdl_url, inputs_path, options_path)
     inputs_file = File.open(inputs_path, 'rb')
     options_file = File.open(options_path, 'rb')
     res = RestClient.post @uri_prefix,
