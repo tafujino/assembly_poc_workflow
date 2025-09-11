@@ -45,6 +45,17 @@ class CromwellServer
 
   # @param id [String]
   # @return [Hash]
+  def outputs(id)
+    begin
+      res = RestClient.get "#{@uri_prefix}/#{id}/outputs"
+      JSON.load(res.body)
+    rescue RestClient::NotFound
+      { 'id' => id, 'outputs' => nil }
+    end
+  end
+
+  # @param id [String]
+  # @return [Hash]
   def abort(id)
     begin
       res = RestClient.post "#{@uri_prefix}/#{id}/abort", {}

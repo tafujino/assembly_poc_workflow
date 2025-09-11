@@ -17,13 +17,13 @@ workflow_url_table = {
   'data_processing/hifi_qc_workflow' => "#{ORIGINAL_REPO_BASE_URL}/data_processing/wdl/workflows/hifi_qc_workflow.wdl",
 }
 
-WORKFLOW_INPUTS_TABLE_PATH = ARGV.shift
+WORKFLOW_INPUT_TABLE_PATH = ARGV.shift
 OPTIONS_PATH = Pathname.new('workflow_options.json')
 
 cromwell = CromwellServer.new(network_conf['host'], network_conf['port'])
 
 puts %w[sample workflow_name input_path workflow_id workflow_status].join("\t")
-CSV.table(WORKFLOW_INPUTS_TABLE_PATH, col_sep: "\t").each do |row|
+CSV.table(WORKFLOW_INPUT_TABLE_PATH, col_sep: "\t").each do |row|
   workflow_type = row[:workflow_name]
   workflow_url = workflow_url_table[workflow_type]
   unless workflow_url
@@ -34,7 +34,7 @@ CSV.table(WORKFLOW_INPUTS_TABLE_PATH, col_sep: "\t").each do |row|
   puts [
     row[:sample],
     row[:workflow_name],
-    row[:json_path],
+    row[:input_path],
     ret['id'],
     ret['status']
   ].join("\t")
