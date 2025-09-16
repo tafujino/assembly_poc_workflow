@@ -15,7 +15,7 @@ def organize_hic_reads(read_paths)
       warn "Unexpected Hi-C read path: #{path}"
       exit 1
     end
-    HicReadPathMatch.new(prefix: Regexp.last_match(1), read_num: Regexp.last_match(2), postfix: Regexp.last_match(3), path: path)
+    HicReadMatch.new(prefix: Regexp.last_match(1), read_num: Regexp.last_match(2), postfix: Regexp.last_match(3), path: path)
   end.group_by(&:read_num)
   read1_matches = read_matches['R1']
   read2_matches = read_matches['R2']
@@ -39,33 +39,47 @@ def organize_hic_reads(read_paths)
     end
     exit 1
   end
-  [read1_paths, read2_path]
+  [read1_paths, read2_paths]
 end
 
 ASM_READS_TABLE_PATH = Pathname.new(ARGV.shift)
-SEX_TABLE_PATH = Pathname.new(ARGV.shift)
+PED_PATH = Pathname.new(ARGV.shift)
+COVERAGE_PATH = Pathname.new(ARGV.shift)
+OTHER_INPUTS_PATH = Pathname.new(ARGV.shift)
+OUT_BASE_DIR = Pathname.new(ARGV.shift).expand_path
 
 asm_reads_table = CSV.table(ASM_READS_TABLE_PATH, col_sep: "\t")
-sex_table = CSV.table(SEX_TABLE_PATH, col_sep: "\t")
+ped_table = CSV.table(PED_PATH, col_sep: "\t")
+coverage_table = CSV.table(COVERAGE_PATH, col_sep: "\t")
+other_inputs = JSON.parse(File.read(OTHER_INPUTS_PATH))
 
-asm_reads_by_sample = asm_reads_table.group_by { |row| row[:sample] }
-sex_by_sample = sex_table.group_by { |row| row[:sample] }.map.to_h do |sample, rows|
+coverage_by_sample = coverage_table.group_by { |row| row[:sample] }.map.to_h do |sample, rows|
   if rows.length > 1
-    warn "Multiple sex assignments for sample #{sample}"
+    warn "Multiple coverage rows for sample #{sample}"
     exit 1
   end
   row = rows.first
-  [sample, row[:sex].downcase]
+  [sample, row[:coverage].to_i]
+end
+
+gender_by_sample = ped_table.group_by { |row| row[:individual_id] }.map.to_h do |sample, rows|
+  if rows.length > 1
+    warn "Multiple rows for sample #{sample} in the pedigree file"
+    exit 1
+  end
+  row = rows.first
+  [sample, row[:gender].to_i]
 end
 
 puts %w[sample workflow_name input_path].join("\t")
 
+asm_reads_by_sample = asm_reads_table.group_by { |row| row[:sample] }
 asm_reads_by_sample.filter_map do |sample, row|
-  out_dir = OUT_BASE_DIR / sample / 'hic_hifiasm_assembly'
+  out_dir = OUT_BASE_DIR / sample / 'hic_hifi_assembly'
   FileUtils.mkpath(out_dir)
 
   asm_reads_by_type = row.group_by { |row| row[:type] }
-  asm_read_paths_by_type = asm_reads_by_sample.transform_values { |rows| rows.map { |row| row[:path] } }
+  asm_read_paths_by_type = asm_reads_by_type.transform_values { |rows| rows.map { |row| row[:path] } }
 
   unless asm_read_paths_by_type['HiC']
     warn "HiC read is empty (sample: #{sample})"
@@ -77,23 +91,33 @@ asm_reads_by_sample.filter_map do |sample, row|
     warn "HiFi read is empty (sample: #{sample})"
     exit 1
   end
-  hifi_reads = asm_reads_paths_by_type['HiFi']
+  hifi_reads = asm_read_paths_by_type['HiFi']
 
-  ont_reads = asm_reads_paths_by_type['UL'] || []
+  ont_reads = asm_read_paths_by_type['UL'] || []
 
-  unless sex_by_sample.key?(sample)
-    warn "Cannot determine the sex of sample #{sample}"
-    exit 1
-  end
   input = {
     'hicHifiasmAssembly.childID': sample,
-    'hicHifiasmAssembly.isMaleSample': sex_by_sample[sample] == 'male' : true ? false,
-
+    'hicHifiasmAssembly.isMaleSample':
+      case gender_by_sample[sample]
+      when 1
+        true
+      when 2
+        false
+      else
+        warn "Invalid gender (#{gender_by_sample[sample]}) for sample #{sample}"
+        exit 1
+      end,
+    'hicHifiasmAssembly.childReadsHiFi': hifi_reads,
+    'hicHifiasmAssembly.childReadsHiC1': hic_reads1,
+    'hicHifiasmAssembly.childReadsHiC2': hic_reads2,
+    'hicHifiasmAssembly.childReadsONT': ont_reads,
+    'hicHifiasmAssembly.homCov': coverage_by_sample[sample]
   }
+  input.merge!(other_inputs)
   input_path = out_dir / "#{sample}.json"
   File.write(input_path, JSON.pretty_generate(input))
   puts [
-    workflow_input.sample,
+    sample,
     'assembly/hic_hifi_assembly',
     input_path
   ].join("\t")
