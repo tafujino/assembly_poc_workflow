@@ -15,8 +15,9 @@ network_conf = JSON.parse(File.read(NETWORK_CONF_PATH))
 workflow_url_table = {
   'data_processing/hic_qc_workflow' => "#{ORIGINAL_REPO_BASE_URL}/data_processing/wdl/workflows/hic_qc_workflow.wdl",
   'data_processing/hifi_qc_workflow' => "#{ORIGINAL_REPO_BASE_URL}/data_processing/wdl/workflows/hifi_qc_workflow.wdl",
-  'assembly/hic_hifi_assembly' => "#{ORIGINAL_REPO_BASE_URL}/assembly/wdl/workflows/hic_hifiasm_assembly_cutadapt_multistep.wdl"
-}
+  'assembly/hic_hifi_assembly' => "#{ORIGINAL_REPO_BASE_URL}/assembly/wdl/workflows/hic_hifiasm_assembly_cutadapt_multistep.wdl",
+  'polishing/deeppolisher' => "#{ORIGINAL_REPO_BASE_URL}/polishing/wdl/workflows/hprc_DeepPolisher.wdl"
+  }
 
 WORKFLOW_INPUT_TABLE_PATH = ARGV.shift
 OPTIONS_PATH = Pathname.new('workflow_options.json')
