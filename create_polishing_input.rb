@@ -7,7 +7,7 @@ require 'pathname'
 
 HIC_HIFIASM_OUTPUTS_TABLE_PATH = Pathname.new(ARGV.shift)
 READS_TABLE_PATH = Pathname.new(ARGV.shift)
-CHECKPOINT_PATH = Pathname.new(ARGV.shift)
+CHECKPOINT_PATH = Pathname.new(ARGV.shift).expand_path
 OUT_BASE_DIR = Pathname.new(ARGV.shift).expand_path
 
 hic_hifiasm_outputs_table = CSV.table(HIC_HIFIASM_OUTPUTS_TABLE_PATH, col_sep: "\t", quote_char: "\x00")
